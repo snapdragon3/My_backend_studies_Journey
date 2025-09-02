@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Live Clock & To-Do Reminder</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .clock {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #333 60%, #000);
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+
+    .hand {
+      position: absolute;
+      bottom: 50%;
+      left: 50%;
+      transform-origin: bottom;
+      transform: translateX(-50%) rotate(0deg);
+    }
+
+    .hour {
+      width: 8px;
+      height: 80px;
+      background: #fff;
+      border-radius: 4px;
+    }
+
+    .minute {
+      width: 6px;
+      height: 110px;
+      background: #ddd;
+      border-radius: 3px;
+    }
+
+    .second {
+      width: 2px;
+      height: 130px;
+      background: #ff4d4d;
+      border-radius: 1px;
+    }
+
+    .center {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 5px rgba(255,255,255,0.6);
+    }
+
+    .todo {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 100%;
+    }
+
+    .todo h2 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .todo input, .todo button {
+      margin: 8px 0;
+      padding: 10px;
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .todo button {
+      background-color: #0078d4;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .todo button:hover {
+      background-color: #005fa3;
+    }
+
+    ul {
+      padding-left: 0;
+      margin-top: 10px;
+      list-style: none;
+    }
+
+    li {
+      margin-bottom: 10px;
+      color: #444;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .delete-btn {
+      background: #ff4d4d;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover {
+      background: #cc0000;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="clock">
+      <div class="hand hour" id="hour"></div>
+      <div class="hand minute" id="minute"></div>
+      <div class="hand second" id="second"></div>
+      <div class="center"></div>
+    </div>
+
+    <div class="todo">
+      <h2>To-Do List with Reminders</h2>
+      <input type="text" id="task" placeholder="Enter task" />
+      <input type="datetime-local" id="reminderTime" />
+      <button onclick="addTask()">Add Task</button>
+      <ul id="taskList"></ul>
+    </div>
+  </div>
+
+  <script>
+    // Live Clock
+    function updateClock() {
+      const now = new Date();
+      const second = now.getSeconds();
+      const minute = now.getMinutes();
+      const hour = now.getHours();
+
+      const secondDeg = second * 6;
+      const minuteDeg = minute * 6 + second * 0.1;
+      const hourDeg = hour * 30 + minute * 0.5;
+
+      document.getElementById("second").style.transform = `translateX(-50%) rotate(${secondDeg}deg)`;
+      document.getElementById("minute").style.transform = `translateX(-50%) rotate(${minuteDeg}deg)`;
+      document.getElementById("hour").style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Request notification permission
+    document.addEventListener("DOMContentLoaded", () => {
+      if (Notification.permission !== "granted") {
+        Notification.requestPermission();
+      }
+    });
+
+    // Add Task
+    function addTask() {
+      const task = document.getElementById("task").value;
+      const timeInput = document.getElementById("reminderTime").value;
+
+      if (!task || !timeInput) {
+        alert("Please enter a task and select a valid time.");
+        return;
+      }
+
+      const time = new Date(timeInput);
+      const now = new Date();
+      const delay = time - now;
+
+      if (delay <= 0) {
+        alert("Please choose a future time for the reminder.");
+        return;
+      }
+
+      const li = document.createElement("li");
+      li.textContent = `${task} (Reminder at ${time.toLocaleTimeString()})`;
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "Delete";
+      deleteBtn.className = "delete-btn";
+      deleteBtn.onclick = () => li.remove();
+
+      li.appendChild(deleteBtn);
+      document.getElementById("taskList").appendChild(li);
+
+      setTimeout(() => {
+        showNotification(task);
+        alert(`🔔 Reminder: It's time for "${task}"`);
+      }, delay);
+
+      document.getElementById("task").value = "";
+      document.getElementById("reminderTime").value = "";
+    }
+
+    // Show Notification
+    function showNotification(task) {
+      if (Notification.permission === "granted") {
+        new Notification("Reminder", {
+          body: `It's time for: ${task}`,
+        });
+      }
+    }
+  </script>
+
+</body>
+</html>
